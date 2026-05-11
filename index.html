@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Imprest Manager</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0F1117;
+      --surface: #181C27;
+      --surface2: #1E2335;
+      --border: #2A2F45;
+      --border-light: #323852;
+      --accent: #6366F1;
+      --accent-glow: rgba(99,102,241,0.18);
+      --accent2: #22D3EE;
+      --danger: #F43F5E;
+      --success: #10B981;
+      --warn: #F59E0B;
+      --text: #F0F2FF;
+      --text-sub: #8B91B0;
+      --text-muted: #555C7A;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --radius-lg: 20px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.45);
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 99px; }
+
+    /* ─── HEADER ─── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+    .header-brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #818CF8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px; font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .header-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px; font-weight: 600;
+      border: none; border-radius: var(--radius-sm);
+      padding: 8px 16px; cursor: pointer;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { background: #7C7FFF; box-shadow: 0 4px 20px rgba(99,102,241,0.5); transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: var(--border-light); }
+    .btn-danger { background: rgba(244,63,94,0.12); color: var(--danger); border: 1px solid rgba(244,63,94,0.25); }
+    .btn-danger:hover { background: rgba(244,63,94,0.2); }
+    .btn-success { background: rgba(16,185,129,0.12); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
+    .btn-success:hover { background: rgba(16,185,129,0.2); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 6px; }
+    .btn-icon {
+      background: var(--surface2);
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+      width: 34px; height: 34px;
+      padding: 0; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .btn-icon:hover { background: var(--border); color: var(--text); }
+
+    /* ─── MAIN LAYOUT ─── */
+    .main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── STAT CARDS ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .stats-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      border-radius: 99px;
+    }
+    .stat-card:hover { border-color: var(--border-light); }
+    .stat-label {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px; font-weight: 700;
+      color: var(--text); line-height: 1;
+    }
+    .stat-value.warn { color: var(--warn); }
+    .stat-value.ok { color: var(--success); }
+    .stat-value.danger { color: var(--danger); }
+    .stat-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .progress-bar {
+      height: 4px; background: var(--border);
+      border-radius: 99px; margin-top: 12px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ─── BREAKDOWN ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+    .breakdown-list { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .breakdown-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .breakdown-amt { font-size: 13px; font-weight: 700; color: var(--text); flex-shrink: 0; }
+
+    /* ─── FILTERS ─── */
+    .filters {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      padding: 12px 20px; align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-label {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .filter-pill {
+      font-size: 12px; font-weight: 500;
+      padding: 4px 12px; border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer; transition: all 0.15s;
+      color: var(--text-sub);
+      font-family: 'Outfit', sans-serif;
+    }
+    .filter-pill:hover:not(.active) { border-color: var(--border-light); color: var(--text); background: var(--surface2); }
+    .filter-pill.active { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+    .filter-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+
+    /* ─── SEARCH ─── */
+    .search-wrap { padding: 14px 20px; }
+    .search-input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+      position: relative;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-wrap { position: relative; padding: 14px 20px; }
+    .search-icon {
+      position: absolute; left: 34px; top: 50%;
+      transform: translateY(-50%); color: var(--text-muted);
+      font-size: 14px; pointer-events: none;
+    }
+
+    /* ─── TABLE ─── */
+    .table-wrap { overflow-x: auto; }
+    .expense-table { width: 100%; border-collapse: collapse; }
+    .expense-table th {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted);
+      padding: 10px 16px; text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky; top: 0; z-index: 5;
+      white-space: nowrap;
+    }
+    .expense-table td {
+      font-size: 13px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: var(--text);
+    }
+    .expense-table tr:last-child td { border-bottom: none; }
+    .expense-table tbody tr { transition: background 0.12s; }
+    .expense-table tbody tr:hover td { background: var(--surface2); }
+
+    /* ─── BADGES ─── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 9px; border-radius: 99px;
+      font-size: 11px; font-weight: 500;
+      font-family: 'Outfit', sans-serif;
+      white-space: nowrap;
+    }
+
+    /* ─── PAID BY CELL ─── */
+    .paid-by-cell { display: flex; align-items: center; gap: 8px; }
+    .paid-by-name { font-weight: 500; font-size: 13px; white-space: nowrap; }
+    .amount-cell { font-weight: 700; font-size: 14px; color: var(--warn); white-space: nowrap; }
+    .action-btns { display: flex; gap: 5px; }
+    .desc-note { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ─── TABLE FOOTER ─── */
+    .table-footer {
+      padding: 11px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end;
+      font-size: 12px; color: var(--text-sub);
+    }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(4px);
+      padding: 16px; animation: fadein 0.15s ease;
+    }
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      width: 500px; max-width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      animation: slideup 0.2s ease;
+    }
+    @keyframes slideup { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 19px; font-weight: 700;
+      color: var(--text); margin-bottom: 20px;
+    }
+
+    /* ─── FORM FIELDS ─── */
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      color: var(--text);
+      background: var(--surface2);
+      outline: none;
+      transition: border 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+      background: #1A1F33;
+    }
+    .field textarea { resize: vertical; min-height: 64px; }
+    .field select option { background: var(--surface); }
+    .modal-actions {
+      display: flex; gap: 10px;
+      justify-content: flex-end; margin-top: 10px;
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ─── PERSON SELECT ─── */
+    .person-select-row { display: flex; gap: 8px; align-items: center; }
+    .person-select-row select { flex: 1; }
+    .add-person-row { display: flex; gap: 8px; margin-top: 8px; }
+    .add-person-row input {
+      flex: 1;
+      font-family: 'Outfit', sans-serif; font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 11px; outline: none;
+      background: var(--surface2); color: var(--text);
+    }
+    .add-person-row input:focus { border-color: var(--accent); }
+
+    /* ─── PEOPLE LIST ─── */
+    .people-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .person-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      background: var(--surface2); border: 1px solid var(--border);
+    }
+    .person-row-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface2);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      font-size: 13px; font-weight: 500;
+      padding: 10px 20px; border-radius: 99px;
+      z-index: 200;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: toastUp 0.22s ease;
+      white-space: nowrap;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+    @keyframes toastUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ─── EMPTY ─── */
+    .empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-msg { font-size: 14px; }
+
+    /* ─── ARCHIVE ─── */
+    .archive-scroll {
+      overflow-x: auto; overflow-y: auto;
+      max-height: 220px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    /* ─── SETTLED LOGS SECTION ─── */
+    .settled-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 700px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 420px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .stats-grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const CATEGORIES = [
+  { id: "office_expense", label: "Office Expense", color: "#F87171", bg: "rgba(248,113,113,0.1)" },
+  { id: "travel", label: "Travel", color: "#60A5FA", bg: "rgba(96,165,250,0.1)" },
+  { id: "meals", label: "Meals & Entertainment", color: "#FBBF24", bg: "rgba(251,191,36,0.1)" },
+  { id: "supplies", label: "Office Supplies", color: "#34D399", bg: "rgba(52,211,153,0.1)" },
+  { id: "transport", label: "Transport", color: "#A78BFA", bg: "rgba(167,139,250,0.1)" },
+  { id: "accommodation", label: "Accommodation", color: "#F472B6", bg: "rgba(244,114,182,0.1)" },
+  { id: "communication", label: "Communication", color: "#22D3EE", bg: "rgba(34,211,238,0.1)" },
+  { id: "other", label: "Other", color: "#94A3B8", bg: "rgba(148,163,184,0.1)" },
+];
+
+const STATUS_COLORS = {
+  Pending: { color: "#FBBF24", bg: "rgba(251,191,36,0.12)" },
+  Settled: { color: "#34D399", bg: "rgba(52,211,153,0.12)" },
+  Rejected: { color: "#F87171", bg: "rgba(248,113,113,0.12)" }
+};
+
+const PAYMENT_METHODS = ["Cash","Online","Google Pay","PhonePe","Other"];
+
+const DEFAULT_SHOPS = [
+  "MRA Bakery","Supreme Traders","City Electricals","Kerala Stores",
+  "Office Mart","Metro Stationery","HP Petrol Pump","Indian Oil",
+  "Classic Hardwares","Reliance Smart"
+];
+
+const AVATAR_COLORS = [
+  ["#818CF8","rgba(129,140,248,0.2)"], ["#FBBF24","rgba(251,191,36,0.2)"],
+  ["#34D399","rgba(52,211,153,0.2)"], ["#A78BFA","rgba(167,139,250,0.2)"],
+  ["#F472B6","rgba(244,114,182,0.2)"], ["#22D3EE","rgba(34,211,238,0.2)"],
+  ["#60A5FA","rgba(96,165,250,0.2)"], ["#F87171","rgba(248,113,113,0.2)"],
+];
+
+const getAvatarColors = (name) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+
+function Avatar({ name, size = 28 }) {
+  const [fg, bg] = getAvatarColors(name);
+  const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: bg, color: fg,
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.38, fontWeight: 700, fontFamily: "'Outfit', sans-serif",
+      flexShrink: 0, border: `1.5px solid ${fg}55`
+    }}>{initials}</div>
+  );
+}
+
+const fmt = (amount) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
+const fmtDate = (d) => new Date(d).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+const getCat = (id, cats) => cats.find(c => c.id === id) || cats[0];
+const today = () => new Date().toISOString().slice(0, 10);
+
+const STORAGE_KEY = "imprest_data_v1";
+const SETTLED_LOGS_KEY = "imprest_settled_logs_v1";
+const CATEGORIES_KEY = "imprest_categories_v1";
+
+const DEFAULT_DATA = {
+  people: ["Alice Johnson", "Bob Smith", "Carol White", "David Lee"],
+  expenses: [
+    { id: 1, description: "Taxi to client meeting", amount: 24.5, category: "transport", date: "2026-05-02", notes: "", paidBy: "Alice Johnson", paymentMethod: "Cash", settlementStatus: "Pending" },
+    { id: 2, description: "Team lunch", amount: 87.0, category: "meals", date: "2026-05-05", notes: "Monthly team lunch", paidBy: "Bob Smith", paymentMethod: "Google Pay", settlementStatus: "Pending" },
+    { id: 3, description: "Printer paper & pens", amount: 32.75, category: "supplies", date: "2026-05-08", notes: "", paidBy: "Carol White", paymentMethod: "Online", settlementStatus: "Pending" },
+  ],
+  imprestFloat: 500,
+};
+
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : DEFAULT_DATA; } catch { return DEFAULT_DATA; }
+}
+function saveData(data) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {} }
+function loadSettledLogs() {
+  try { const r = localStorage.getItem(SETTLED_LOGS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+}
+function saveSettledLogs(logs) { try { localStorage.setItem(SETTLED_LOGS_KEY, JSON.stringify(logs)); } catch {} }
+function loadCategories() {
+  try { const r = localStorage.getItem(CATEGORIES_KEY); return r ? JSON.parse(r) : CATEGORIES; } catch { return CATEGORIES; }
+}
+function saveCategories(cats) { try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats)); } catch {} }
+
+function App() {
+  const [data, setData] = useState(loadData);
+  const { people, expenses, imprestFloat } = data;
+  const [categories, setCategories] = useState(loadCategories);
+  const [settledLogs, setSettledLogs] = useState(loadSettledLogs);
+
+  useEffect(() => { saveCategories(categories); }, [categories]);
+
+  const update = (patch) => { const next = { ...data, ...patch }; setData(next); saveData(next); };
+  const setPeople = (p) => update({ people: p });
+  const setExpenses = (e) => update({ expenses: e });
+  const setImprestFloat = (f) => update({ imprestFloat: f });
+
+  const [showForm, setShowForm] = useState(false);
+  const [showTopUp, setShowTopUp] = useState(false);
+  const [showManagePeople, setShowManagePeople] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [filterCat, setFilterCat] = useState("all");
+  const [filterPerson, setFilterPerson] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [editId, setEditId] = useState(null);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [newPersonName, setNewPersonName] = useState("");
+  const [addPersonInline, setAddPersonInline] = useState(false);
+  const [form, setForm] = useState({ description: "", amount: "", category: "office_expense", paymentMethod: "Cash", date: today(), notes: "", paidBy: people[0] || "", settlementStatus: "Pending", settledDate: "", settledBy: "" });
+  const [deleteId, setDeleteId] = useState(null);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [showBgPicker, setShowBgPicker] = useState(false);
+  const [bgTheme, setBgTheme] = useState(() => localStorage.getItem("imprest_bg_theme") || "dark");
+
+  const BG_THEMES = [
+    { id: "dark",    label: "Midnight",   bg: "#0F1117", surface: "#181C27", surface2: "#1E2335", border: "#2A2F45", borderLight: "#323852", text: "#F0F2FF", textSub: "#8B91B0", textMuted: "#555C7A" },
+    { id: "slate",   label: "Slate",      bg: "#0D1321", surface: "#1A2236", surface2: "#1F2A42", border: "#253049", borderLight: "#2E3B57", text: "#E8EDF8", textSub: "#7A8BAD", textMuted: "#4A5778" },
+    { id: "forest",  label: "Forest",     bg: "#0A1512", surface: "#111E1A", surface2: "#162420", border: "#223029", borderLight: "#2A3D33", text: "#E5F2EC", textSub: "#6E9E85", textMuted: "#3D6150" },
+    { id: "wine",    label: "Wine",       bg: "#110A0E", surface: "#1C1015", surface2: "#23141A", border: "#361A25", borderLight: "#42202E", text: "#F5E8EC", textSub: "#A8768A", textMuted: "#6B3F50" },
+    { id: "light",   label: "Cloud",      bg: "#F4F6FB", surface: "#FFFFFF", surface2: "#F0F2F8", border: "#DDE2EF", borderLight: "#C8CFDF", text: "#1A1E2E", textSub: "#5A6380", textMuted: "#9099B5" },
+    { id: "warm",    label: "Sand",       bg: "#F7F4EF", surface: "#FFFFFF", surface2: "#F0EDE6", border: "#E2DAD0", borderLight: "#CEBFB2", text: "#2A2218", textSub: "#6E5F50", textMuted: "#9E8E80" },
+  ];
+
+  const applyTheme = (theme) => {
+    const root = document.documentElement;
+    root.style.setProperty("--bg", theme.bg);
+    root.style.setProperty("--surface", theme.surface);
+    root.style.setProperty("--surface2", theme.surface2);
+    root.style.setProperty("--border", theme.border);
+    root.style.setProperty("--border-light", theme.borderLight);
+    root.style.setProperty("--text", theme.text);
+    root.style.setProperty("--text-sub", theme.textSub);
+    root.style.setProperty("--text-muted", theme.textMuted);
+  };
+
+  useEffect(() => {
+    const theme = BG_THEMES.find(t => t.id === bgTheme) || BG_THEMES[0];
+    applyTheme(theme);
+    localStorage.setItem("imprest_bg_theme", bgTheme);
+  }, [bgTheme]);
+  const [savedShops, setSavedShops] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("saved_shop_names") || "[]"); } catch { return []; }
+  });
+
+  const totalSpent = expenses.filter(e => e.settlementStatus !== "Settled").reduce((s, e) => s + e.amount, 0);
+  const balance = imprestFloat - totalSpent;
+  const balancePct = Math.max(0, Math.min(100, (balance / imprestFloat) * 100));
+
+  let filtered = expenses;
+  if (filterCat !== "all") filtered = filtered.filter(e => e.category === filterCat);
+  if (filterPerson !== "all") filtered = filtered.filter(e => e.paidBy === filterPerson);
+  if (filterStatus !== "all") filtered = filtered.filter(e => (e.settlementStatus || "Pending") === filterStatus);
+  if (searchTerm.trim()) {
+    const q = searchTerm.toLowerCase();
+    filtered = filtered.filter(e =>
+      e.description.toLowerCase().includes(q) ||
+      e.paidBy.toLowerCase().includes(q) ||
+      (e.paymentMethod || "").toLowerCase().includes(q) ||
+      (e.notes || "").toLowerCase().includes(q) ||
+      String(e.amount).includes(q)
+    );
+  }
+
+  const flash = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(""), 2500); };
+
+  const openAdd = () => {
+    setEditId(null);
+    setForm({ description: "", amount: "", category: "office_expense", paymentMethod: "Cash", date: today(), notes: "", paidBy: people[0] || "", settlementStatus: "Pending", settledDate: "", settledBy: "" });
+    setAddPersonInline(false); setNewPersonName(""); setShowForm(true);
+  };
+
+  const openEdit = (exp) => {
+    setEditId(exp.id);
+    setForm({ description: exp.description, amount: String(exp.amount), category: exp.category, paymentMethod: exp.paymentMethod || "Cash", date: exp.date, notes: exp.notes || "", paidBy: exp.paidBy || "", settlementStatus: exp.settlementStatus || "Pending", settledDate: exp.settledDate || "", settledBy: exp.settledBy || "" });
+    setAddPersonInline(false); setNewPersonName(""); setShowForm(true);
+  };
+
+  const handleAddPersonInline = () => {
+    const name = newPersonName.trim();
+    if (!name || people.includes(name)) { setAddPersonInline(false); setNewPersonName(""); return; }
+    setPeople([...people, name]);
+    setForm(f => ({ ...f, paidBy: name }));
+    setAddPersonInline(false); setNewPersonName("");
+  };
+
+  const handleSubmit = () => {
+    if (!form.description.trim() || !form.amount || isNaN(parseFloat(form.amount)) || !form.paidBy) return;
+    const desc = form.description.trim();
+    if (desc && !savedShops.includes(desc)) {
+      const updated = [...savedShops, desc];
+      setSavedShops(updated);
+      localStorage.setItem("saved_shop_names", JSON.stringify(updated));
+    }
+    if (editId) {
+      setExpenses(expenses.map(e => e.id === editId ? { ...e, ...form, amount: parseFloat(form.amount) } : e));
+      flash("Expense updated.");
+    } else {
+      setExpenses([...expenses, { id: Date.now(), ...form, amount: parseFloat(form.amount) }]);
+      flash("Expense added.");
+    }
+    setShowForm(false);
+  };
+
+  const handleDelete = (id) => { setExpenses(expenses.filter(e => e.id !== id)); setDeleteId(null); flash("Expense deleted."); };
+
+  const markSettled = (id) => {
+    const expense = expenses.find(e => e.id === id);
+    if (!expense) return;
+    const settled = { ...expense, settlementStatus: "Settled", settledDate: today(), settledBy: "Admin" };
+    const updatedLogs = [...settledLogs, settled];
+    setSettledLogs(updatedLogs);
+    saveSettledLogs(updatedLogs);
+    setExpenses(expenses.filter(e => e.id !== id));
+    flash("Expense settled and archived.");
+  };
+
+  const handleTopUp = () => {
+    const v = parseFloat(topUpAmount);
+    if (isNaN(v) || v < 0) return;
+    setImprestFloat(v);
+    setTopUpAmount(""); setShowTopUp(false);
+    flash(`Float set to ${fmt(v)}.`);
+  };
+
+  const handleAddPerson = () => {
+    const name = newPersonName.trim();
+    if (!name || people.includes(name)) return;
+    setPeople([...people, name]); setNewPersonName(""); flash(`${name} added.`);
+  };
+
+  const handleRemovePerson = (name) => { setPeople(people.filter(p => p !== name)); flash(`${name} removed.`); };
+
+  const spentByCat = categories.map(c => ({ ...c, total: expenses.filter(e => e.category === c.id).reduce((s, e) => s + e.amount, 0) })).filter(c => c.total > 0);
+  const spentByPerson = people.map(p => ({ name: p, total: expenses.filter(e => e.paidBy === p).reduce((s, e) => s + e.amount, 0) })).filter(p => p.total > 0);
+
+  const descriptionSuggestions = [...new Set([...DEFAULT_SHOPS, ...savedShops, ...expenses.map(e => e.description).filter(Boolean)])];
+
+  const isLow = balance < imprestFloat * 0.2;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+
+      {/* ─── HEADER ─── */}
+      <div className="header">
+        <div className="header-brand">
+          <div className="brand-icon">💼</div>
+          <div>
+            <h1>Imprest Manager</h1>
+            <div className="header-sub">Petty cash & expense tracking</div>
+          </div>
+        </div>
+        <div className="header-btns">
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowManagePeople(true)}>👥 People</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowManageCategories(true)}>🏷 Categories</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowTopUp(true)}>💰 Set Float</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowBgPicker(true)}>🎨 Theme</button>
+          <button className="btn btn-primary" onClick={openAdd}>+ Add Expense</button>
+        </div>
+      </div>
+
+      <div className="main">
+
+        {/* ─── STAT CARDS ─── */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-label">Total Imprest Amount</div>
+            <div className="stat-value">{fmt(imprestFloat)}</div>
+            <div className="stat-note">Total allocated</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Total Spent</div>
+            <div className="stat-value warn">{fmt(totalSpent)}</div>
+            <div className="stat-note">{expenses.length} expense{expenses.length !== 1 ? "s" : ""} logged</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Remaining Balance</div>
+            <div className={`stat-value ${isLow ? "danger" : "ok"}`}>{fmt(balance)}</div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${balancePct}%`, background: isLow ? "var(--danger)" : "var(--success)" }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="stats-grid-2">
+          <div className="stat-card">
+            <div className="stat-label">Pending Amount</div>
+            <div className="stat-value warn">{fmt(expenses.filter(e => (e.settlementStatus || "Pending") === "Pending").reduce((s, e) => s + e.amount, 0))}</div>
+            <div className="stat-note">Awaiting settlement</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Settled Amount</div>
+            <div className="stat-value ok">{fmt(settledLogs.reduce((s, e) => s + e.amount, 0))}</div>
+            <div className="stat-note">Archived settlements</div>
+          </div>
+        </div>
+
+        {/* ─── BREAKDOWNS ─── */}
+        {(spentByCat.length > 0 || spentByPerson.length > 0) && (
+          <div className="two-col">
+            {spentByCat.length > 0 && (
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">By Category</span>
+                </div>
+                <div className="breakdown-list">
+                  {spentByCat.map(c => (
+                    <div key={c.id} className="breakdown-item">
+                      <span className="badge" style={{ background: c.bg, color: c.color }}>{c.label}</span>
+                      <span className="breakdown-amt" style={{ color: c.color }}>{fmt(c.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {spentByPerson.length > 0 && (
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">By Person</span>
+                </div>
+                <div className="breakdown-list">
+                  {spentByPerson.map(p => (
+                    <div key={p.name} className="breakdown-item">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Avatar name={p.name} size={24} />
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</span>
+                      </div>
+                      <span className="breakdown-amt" style={{ color: "var(--warn)" }}>{fmt(p.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── EXPENSE LOG ─── */}
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="card-header">
+            <span className="card-title">Expense Log</span>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                const jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.text("Expense Log Report", 14, 18);
+                let y = 30;
+                doc.setFontSize(9);
+                ["Date","Description","Paid By","Amount"].forEach((h, i) => {
+                  const x = [10,45,120,165][i];
+                  const w = [35,75,45,35][i];
+                  doc.rect(x, y, w, 9); doc.text(h, x+2, y+6.5);
+                });
+                y += 9;
+                filtered.forEach(exp => {
+                  if (y > 270) { doc.addPage(); y = 20; }
+                  const row = [exp.date, exp.description.substring(0,35), exp.paidBy.substring(0,18), "Rs."+exp.amount];
+                  [10,45,120,165].forEach((x,i) => { const w=[35,75,45,35][i]; doc.rect(x,y,w,9); doc.text(String(row[i]),x+2,y+6.5); });
+                  y += 9;
+                });
+                doc.save("expense-log-report.pdf");
+              }}
+            >📄 Download PDF</button>
+          </div>
+
+          <div className="search-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search expenses..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ paddingLeft: 38 }}
+            />
+          </div>
+
+          <div className="filters">
+            <span className="filter-label">Category:</span>
+            <span className={`filter-pill ${filterCat === "all" ? "active" : ""}`} onClick={() => setFilterCat("all")}>All</span>
+            {categories.filter(c => expenses.some(e => e.category === c.id)).map(c => (
+              <span key={c.id} className={`filter-pill ${filterCat === c.id ? "active" : ""}`} onClick={() => setFilterCat(c.id)}>{c.label}</span>
+            ))}
+            <div className="filter-sep" />
+            <span className="filter-label">Person:</span>
+            <span className={`filter-pill ${filterPerson === "all" ? "active" : ""}`} onClick={() => setFilterPerson("all")}>All</span>
+            {people.filter(p => expenses.some(e => e.paidBy === p)).map(p => (
+              <span key={p} className={`filter-pill ${filterPerson === p ? "active" : ""}`} onClick={() => setFilterPerson(p)}>{p.split(" ")[0]}</span>
+            ))}
+            <div className="filter-sep" />
+            <span className="filter-label">Status:</span>
+            <span className={`filter-pill ${filterStatus === "all" ? "active" : ""}`} onClick={() => setFilterStatus("all")}>All</span>
+            {["Pending","Settled"].map(s => (
+              <span key={s} className={`filter-pill ${filterStatus === s ? "active" : ""}`} onClick={() => setFilterStatus(s)}>{s}</span>
+            ))}
+          </div>
+
+          <div className="table-wrap">
+            {filtered.length === 0 ? (
+              <div className="empty">
+                <div className="empty-icon">🧾</div>
+                <div className="empty-msg">No expenses found. Click <strong>+ Add Expense</strong> to get started.</div>
+              </div>
+            ) : (
+              <table className="expense-table">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Description</th><th>Category</th>
+                    <th>Payment</th><th>Paid By</th><th>Status</th>
+                    <th>Amount</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.slice().sort((a, b) => b.date.localeCompare(a.date)).map(exp => {
+                    const cat = getCat(exp.category, categories);
+                    const status = exp.settlementStatus || "Pending";
+                    return (
+                      <tr key={exp.id}>
+                        <td style={{ color: "var(--text-muted)", fontSize: 12, whiteSpace: "nowrap" }}>{fmtDate(exp.date)}</td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{exp.description}</div>
+                          {exp.notes && <div className="desc-note">{exp.notes}</div>}
+                        </td>
+                        <td><span className="badge" style={{ background: cat.bg, color: cat.color }}>{cat.label}</span></td>
+                        <td style={{ color: "var(--text-sub)", fontWeight: 500 }}>{exp.paymentMethod || "Cash"}</td>
+                        <td>
+                          {exp.paidBy ? (
+                            <div className="paid-by-cell">
+                              <Avatar name={exp.paidBy} size={26} />
+                              <span className="paid-by-name">{exp.paidBy}</span>
+                            </div>
+                          ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
+                        </td>
+                        <td>
+                          <span className="badge" style={{ background: STATUS_COLORS[status].bg, color: STATUS_COLORS[status].color }}>{status}</span>
+                        </td>
+                        <td className="amount-cell">{fmt(exp.amount)}</td>
+                        <td>
+                          <div className="action-btns">
+                            <button className="btn btn-ghost btn-sm" onClick={() => openEdit(exp)}>Edit</button>
+                            {status !== "Settled" && (
+                              <button className="btn btn-success btn-sm" onClick={() => markSettled(exp.id)}>Settle</button>
+                            )}
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteId(exp.id)}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {filtered.length > 0 && (
+            <div className="table-footer">
+              <span>{filtered.length} expense{filtered.length !== 1 ? "s" : ""} · Total: <strong style={{ color: "var(--warn)" }}>{fmt(filtered.reduce((s, e) => s + e.amount, 0))}</strong></span>
+            </div>
+          )}
+        </div>
+
+        {/* ─── SETTLED LOGS ─── */}
+        <div className="settled-section">
+          <div className="card-header">
+            <span className="card-title">Settled Logs</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => {
+                const blob = new Blob([JSON.stringify(settledLogs, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url; a.download = "settled-archive.json"; a.click();
+                URL.revokeObjectURL(url); flash("Archive downloaded.");
+              }}>📥 Download</button>
+              <button className="btn btn-danger btn-sm" onClick={() => {
+                if (window.confirm("Clear all settled logs?")) { setSettledLogs([]); saveSettledLogs([]); flash("Archive cleared."); }
+              }}>Clear</button>
+            </div>
+          </div>
+          {settledLogs.length === 0 ? (
+            <div className="empty">
+              <div className="empty-icon">📦</div>
+              <div className="empty-msg">No settled logs yet.</div>
+            </div>
+          ) : (
+            <div className="archive-scroll">
+              <table className="expense-table">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Description</th><th>Paid By</th><th>Settled</th><th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {settledLogs.slice().reverse().map(log => (
+                    <tr key={log.id}>
+                      <td style={{ fontSize: 12 }}>{fmtDate(log.date)}</td>
+                      <td style={{ fontSize: 12 }}>{log.description}</td>
+                      <td style={{ fontSize: 12 }}>{log.paidBy}</td>
+                      <td style={{ fontSize: 12 }}>{fmtDate(log.settledDate)}</td>
+                      <td className="amount-cell" style={{ fontSize: 12 }}>{fmt(log.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* ─── ADD / EDIT MODAL ─── */}
+      {showForm && (
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>{editId ? "Edit Expense" : "New Expense"}</h2>
+            <div className="field">
+              <label>Description *</label>
+              <input placeholder="Enter expense description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="grid2">
+              <div className="field">
+                <label>Amount (INR) *</label>
+                <input type="number" placeholder="0.00" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+              </div>
+              <div className="field">
+                <label>Date *</label>
+                <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+              </div>
+            </div>
+            <div className="field">
+              <label>Category *</label>
+              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Payment Method *</label>
+              <select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })}>
+                {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Paid By *</label>
+              <div className="person-select-row">
+                <select value={form.paidBy} onChange={e => {
+                  if (e.target.value === "__add__") setAddPersonInline(true);
+                  else setForm({ ...form, paidBy: e.target.value });
+                }}>
+                  {people.length === 0 && <option value="">— No people yet —</option>}
+                  {people.map(p => <option key={p} value={p}>{p}</option>)}
+                  <option value="__add__">+ Add new person…</option>
+                </select>
+                {form.paidBy && <Avatar name={form.paidBy} size={34} />}
+              </div>
+              {addPersonInline && (
+                <div className="add-person-row">
+                  <input autoFocus placeholder="Full name" value={newPersonName}
+                    onChange={e => setNewPersonName(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") handleAddPersonInline(); if (e.key === "Escape") { setAddPersonInline(false); setNewPersonName(""); } }} />
+                  <button className="btn btn-primary btn-sm" onClick={handleAddPersonInline}>Add</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setAddPersonInline(false); setNewPersonName(""); }}>✕</button>
+                </div>
+              )}
+            </div>
+            <div className="field">
+              <label>Notes (optional)</label>
+              <textarea placeholder="Additional details..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleSubmit}>{editId ? "Save Changes" : "Add Expense"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MANAGE PEOPLE ─── */}
+      {showManagePeople && (
+        <div className="modal-overlay" onClick={() => setShowManagePeople(false)}>
+          <div className="modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
+            <h2>Manage People</h2>
+            <div className="people-list">
+              {people.length === 0 && <div style={{ color: "var(--text-muted)", fontSize: 13 }}>No people added yet.</div>}
+              {people.map(p => (
+                <div key={p} className="person-row">
+                  <Avatar name={p} size={32} />
+                  <span className="person-row-name">{p}</span>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleRemovePerson(p)}>Remove</button>
+                </div>
+              ))}
+            </div>
+            <div className="divider" />
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.6px", color: "var(--text-muted)", marginBottom: 8 }}>Add New Person</div>
+            <div className="add-person-row">
+              <input placeholder="Full name" value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleAddPerson(); }} />
+              <button className="btn btn-primary" onClick={handleAddPerson}>Add</button>
+            </div>
+            <div className="modal-actions" style={{ marginTop: 20 }}>
+              <button className="btn btn-ghost" onClick={() => setShowManagePeople(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MANAGE CATEGORIES ─── */}
+      {showManageCategories && (
+        <div className="modal-overlay" onClick={() => setShowManageCategories(false)}>
+          <div className="modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
+            <h2>Manage Categories</h2>
+            <div className="people-list">
+              {categories.map(cat => (
+                <div key={cat.id} className="person-row">
+                  <span className="badge" style={{ background: cat.bg, color: cat.color }}>{cat.label}</span>
+                  <span style={{ flex: 1 }} />
+                  <button className="btn btn-danger btn-sm" onClick={() => { setCategories(categories.filter(c => c.id !== cat.id)); flash("Category removed."); }}>Remove</button>
+                </div>
+              ))}
+            </div>
+            <div className="divider" />
+            <div className="add-person-row">
+              <input placeholder="New category name" value={newCategory} onChange={e => setNewCategory(e.target.value)} />
+              <button className="btn btn-primary" onClick={() => {
+                if (!newCategory.trim()) return;
+                setCategories([...categories, { id: newCategory.toLowerCase().replace(/\s+/g, "_"), label: newCategory, color: "#818CF8", bg: "rgba(129,140,248,0.12)" }]);
+                setNewCategory(""); flash("Category added.");
+              }}>Add</button>
+            </div>
+            <div className="modal-actions" style={{ marginTop: 20 }}>
+              <button className="btn btn-ghost" onClick={() => setShowManageCategories(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── SET FLOAT ─── */}
+      {showTopUp && (
+        <div className="modal-overlay" onClick={() => setShowTopUp(false)}>
+          <div className="modal" style={{ width: 360 }} onClick={e => e.stopPropagation()}>
+            <h2>Set Total Imprest Amount</h2>
+            <p style={{ fontSize: 13, color: "var(--text-sub)", marginBottom: 18 }}>Current amount: <strong style={{ color: "var(--text)" }}>{fmt(imprestFloat)}</strong></p>
+            <div className="field">
+              <label>Total Imprest Amount (INR)</label>
+              <input type="number" placeholder="0.00" min="0" step="0.01" value={topUpAmount} onChange={e => setTopUpAmount(e.target.value)} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowTopUp(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleTopUp}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── BG THEME PICKER ─── */}
+      {showBgPicker && (
+        <div className="modal-overlay" onClick={() => setShowBgPicker(false)}>
+          <div className="modal" style={{ width: 400 }} onClick={e => e.stopPropagation()}>
+            <h2>Choose Theme</h2>
+            <p style={{ fontSize: 13, color: "var(--text-sub)", marginBottom: 20 }}>Select a background colour style for the app.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {BG_THEMES.map(theme => (
+                <div
+                  key={theme.id}
+                  onClick={() => { setBgTheme(theme.id); }}
+                  style={{
+                    padding: "14px 16px",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    border: bgTheme === theme.id ? "2px solid var(--accent)" : "2px solid var(--border)",
+                    background: theme.surface,
+                    display: "flex", alignItems: "center", gap: 12,
+                    transition: "all 0.15s",
+                    boxShadow: bgTheme === theme.id ? "0 0 0 3px var(--accent-glow)" : "none"
+                  }}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    background: theme.bg,
+                    border: `2px solid ${theme.border}`,
+                    flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center"
+                  }}>
+                    <div style={{ width: 16, height: 16, borderRadius: 4, background: theme.surface2 }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.text, fontFamily: "Syne, sans-serif" }}>{theme.label}</div>
+                    <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{theme.id === bgTheme ? "✓ Active" : theme.bg}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions" style={{ marginTop: 20 }}>
+              <button className="btn btn-ghost" onClick={() => setShowBgPicker(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── DELETE CONFIRM ─── */}
+      {deleteId && (
+        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
+          <div className="modal" style={{ width: 340, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
+            <h2 style={{ marginBottom: 8 }}>Delete Expense?</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 24 }}>This action cannot be undone.</p>
+            <div className="modal-actions" style={{ justifyContent: "center" }}>
+              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={() => handleDelete(deleteId)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TOAST ─── */}
+      {successMsg && (
+        <div className="toast">
+          <div className="toast-dot" />
+          {successMsg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
